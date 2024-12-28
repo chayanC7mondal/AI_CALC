@@ -50,16 +50,30 @@ export default function Home() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // const sendData = async () => {
+  //   const canvas = canvasRef.current;
+  //   if (canvas) {
+  //     console.log("sending data..", "http://127.0.0.1:8000/calculate");
+  //     const response = await axios.post(
+  //       ${import.meta.env.VITE_API_URL}/calculate,
+  //       {
+  //         image: canvas.toDataURL("image/png"),
+  //         dict_of_vars: dictOfVars,
+  //       }
+  //     );
+  //     const resp = await response.data;
+  //     console.log("response:", resp);
+  //   }
+  // };
+
   const sendData = async () => {
     const canvas = canvasRef.current;
     if (canvas) {
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/calculate`,
-        {
-          image: canvas.toDataURL("image/png"),
-          dict_of_vars: dictOfVars,
-        }
-      );
+      console.log("sending data..", "http://127.0.0.1:8000/calculate");
+      const response = await axios.post("http://127.0.0.1:8000/calculate", {
+        image: canvas.toDataURL("image/png"),
+        dict_of_vars: dictOfVars,
+      });
       const resp = await response.data;
       console.log("response:", resp);
     }
@@ -152,6 +166,11 @@ export default function Home() {
         onMouseOut={stopDrawing}
         onMouseMove={draw}
       />
+
+      {/* Footer with text */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-sm text-white opacity-60">
+        Made with ❤️ by Chayan
+      </div>
     </>
   );
 }
