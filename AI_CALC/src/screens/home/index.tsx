@@ -109,7 +109,7 @@ export default function Home() {
       <div className="grid grid-cols-3 gap-2">
         <Button
           onClick={() => setReset(true)}
-          className="z-20 bg-black text-white"
+          className="z-20 bg-black text-white hover:bg-gray-800 transition-colors"
           variant="default"
         >
           Reset
@@ -120,17 +120,29 @@ export default function Home() {
               key={swatchColor}
               color={swatchColor}
               onClick={() => setColor(swatchColor)}
+              style={{
+                cursor: "pointer",
+                transition: "transform 0.2s ease-in-out",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "scale(1.2)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "scale(1)";
+              }}
             />
           ))}
         </Group>
         <Button
           onClick={sendData}
-          className="z-20 bg-black text-white"
+          className="z-20 bg-black text-white hover:bg-gray-800 transition-colors"
           variant="default"
         >
           Calculate
         </Button>
       </div>
+
+      {/* Canvas */}
       <canvas
         ref={canvasRef}
         id="canvas"
