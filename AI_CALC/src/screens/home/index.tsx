@@ -23,7 +23,11 @@ export default function Home() {
   useEffect(() => {
     if (latexExpression.length > 0 && window.MathJax) {
       setTimeout(() => {
-        window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub]);
+        window.MathJax.Hub.Queue([
+          "Typeset",
+          window.MathJax.Hub,
+          document.body,
+        ]);
       }, 0);
     }
   }, [latexExpression]);
@@ -57,7 +61,8 @@ export default function Home() {
     }
     const script = document.createElement("script");
     script.src =
-      "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/config/TeX-MML-AM_CHTML.js";
+      "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/latest.js?config=TeX-MML-AM_CHTML";
+
     script.async = true;
     document.head.appendChild(script);
 
@@ -118,14 +123,28 @@ export default function Home() {
     }
   };
 
-  const sendData = async () => {
+  // const sendData = async () => {
+  //   const canvas = canvasRef.current;
+  //   if (canvas) {
+  //     console.log("sending data..", "http://127.0.0.1:8000/calculate");
+  //     const response = await axios.post("http://127.0.0.1:8000/calculate", {
+  //       image: canvas.toDataURL("image/png"),
+  //       dict_of_vars: dictOfVars,
+  //     });
+
+  const runRoute = async () => {
     const canvas = canvasRef.current;
+
     if (canvas) {
-      console.log("sending data..", "http://127.0.0.1:8000/calculate");
-      const response = await axios.post("http://127.0.0.1:8000/calculate", {
-        image: canvas.toDataURL("image/png"),
-        dict_of_vars: dictOfVars,
+      const response = await axios({
+        method: "post",
+        url: "http://127.0.0.1:8000/calculate",
+        data: {
+          image: canvas.toDataURL("image/png"),
+          dict_of_vars: dictOfVars,
+        },
       });
+
       const resp = await response.data;
       console.log("Response", resp);
       resp.data.forEach(
@@ -245,7 +264,7 @@ export default function Home() {
           ))}
         </Group>
         <Button
-          onClick={sendData}
+          onClick={runRoute}
           className="z-20 bg-black text-white hover:bg-gray-800 transition-colors"
           variant="default"
         >
@@ -272,7 +291,11 @@ export default function Home() {
             onStop={(e, data) => setLatexPosition({ x: data.x, y: data.y })}
           >
             <div className="absolute p-2 text-white rounded shadow-md">
-              <div className="latex-content">{latex}</div>
+              {/* MathJax processes this */}
+              <div
+                className="latex-content"
+                dangerouslySetInnerHTML={{ __html: latex }}
+              />
             </div>
           </Draggable>
         ))}
