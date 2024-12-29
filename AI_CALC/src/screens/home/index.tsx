@@ -3,6 +3,7 @@ import { SWATCHES } from "../../constants";
 import { ColorSwatch, Group } from "@mantine/core";
 import { Button } from "../../components/ui/button";
 import axios from "axios";
+import Draggable from "react-draggable";
 
 interface GeneratedResult {
   expression: string;
@@ -16,10 +17,27 @@ export default function Home() {
   const [reset, setReset] = useState(false);
   const [result, setResult] = useState<GeneratedResult>();
   const [dictOfVars, setDictOfVars] = useState({});
+  const [latexPosition, setLatexPosition] = useState({ x: 10, y: 200 });
+  const [latexExpression, setLatexExpression] = useState<Array<string>>([]);
+
+  useEffect(() => {
+    if (latexExpression.length > 0 && window.MathJax) {
+      setTimeout(() => {
+        window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub]);
+      }, 0);
+    }
+  }, [latexExpression]);
+
+  useEffect(() => {
+    if (result) {
+      renderLatexToCanvas(result.expression, result.answer);
+    }
+  }, [result]);
 
   useEffect(() => {
     if (reset) {
       resetCanvas();
+      setLatexExpression([]);
       setResult(undefined);
       setDictOfVars({});
       setReset(false);
@@ -37,6 +55,26 @@ export default function Home() {
         ctx.lineWidth = 3;
       }
     }
+    const script = document.createElement("script");
+    script.src =
+      "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/config/TeX-MML-AM_CHTML.js";
+    script.async = true;
+    document.head.appendChild(script);
+
+    script.onload = () => {
+      window.MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+        },
+      });
+    };
+
+    return () => {
+      document.head.removeChild(script);
+    };
 
     // Resize canvas on window resize
     const handleResize = () => {
@@ -66,6 +104,20 @@ export default function Home() {
   //   }
   // };
 
+  const renderLatexToCanvas = (expression: string, answer: string) => {
+    const latex = `\\(\\LARGE{${expression} = ${answer}}\\)`;
+    setLatexExpression([...latexExpression, latex]);
+
+    // Clear the main canvas
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+  };
+
   const sendData = async () => {
     const canvas = canvasRef.current;
     if (canvas) {
@@ -75,7 +127,52 @@ export default function Home() {
         dict_of_vars: dictOfVars,
       });
       const resp = await response.data;
-      console.log("response:", resp);
+      console.log("Response", resp);
+      resp.data.forEach(
+        (data: { expr: string; result: string; assign: boolean }) => {
+          if (data.assign === true) {
+            // dict_of_vars[resp.result] = resp.answer;
+            setDictOfVars({
+              ...dictOfVars,
+              [data.expr]: data.result,
+            });
+          }
+        }
+      );
+      const ctx = canvas.getContext("2d");
+      const imageData = ctx!.getImageData(0, 0, canvas.width, canvas.height);
+      let minX = canvas.width,
+        minY = canvas.height,
+        maxX = 0,
+        maxY = 0;
+
+      for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
+          const i = (y * canvas.width + x) * 4;
+          if (imageData.data[i + 3] > 0) {
+            // If pixel is not transparent
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
+          }
+        }
+      }
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+
+      setLatexPosition({ x: centerX, y: centerY });
+      resp.data.forEach(
+        //data:Response
+        (data: { expr: string; result: string; assign: boolean }) => {
+          setTimeout(() => {
+            setResult({
+              expression: data.expr,
+              answer: data.result,
+            });
+          }, 200);
+        }
+      );
     }
   };
 
@@ -166,6 +263,19 @@ export default function Home() {
         onMouseOut={stopDrawing}
         onMouseMove={draw}
       />
+
+      {latexExpression &&
+        latexExpression.map((latex, index) => (
+          <Draggable
+            key={index}
+            defaultPosition={latexPosition}
+            onStop={(e, data) => setLatexPosition({ x: data.x, y: data.y })}
+          >
+            <div className="absolute p-2 text-white rounded shadow-md">
+              <div className="latex-content">{latex}</div>
+            </div>
+          </Draggable>
+        ))}
 
       {/* Footer with text */}
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-sm text-white opacity-60">
