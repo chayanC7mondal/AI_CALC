@@ -272,7 +272,6 @@ export default function Home() {
         </Button>
       </div>
 
-      {/* Canvas */}
       <canvas
         ref={canvasRef}
         id="canvas"
@@ -291,7 +290,6 @@ export default function Home() {
             onStop={(e, data) => setLatexPosition({ x: data.x, y: data.y })}
           >
             <div className="absolute p-2 text-white rounded shadow-md">
-              {/* MathJax processes this */}
               <div
                 className="latex-content"
                 dangerouslySetInnerHTML={{ __html: latex }}
